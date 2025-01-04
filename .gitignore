@@ -1,3 +1,4 @@
-.env
-*.log
-config/secrets.yml
+# Ignore virtual environment directory
+env/
+
+.codegpt
