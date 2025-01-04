@@ -1,0 +1,367 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-8.3.4, pluggy-1.5.0
+benchmark: 5.1.0 (defaults: timer=time.perf_counter disable_gc=False min_rounds=5 min_time=0.000005 max_time=1.0 calibration_precision=10 warmup=False warmup_iterations=100000)
+rootdir: C:\Users\posso\crypto_app
+plugins: anyio-3.7.1, asyncio-0.25.0, benchmark-5.1.0, cov-6.0.0, profiling-1.8.1
+asyncio: mode=Mode.STRICT, asyncio_default_fixture_loop_scope=None
+collected 0 items / 34 errors
+
+=================================== ERRORS ====================================
+______________ ERROR collecting tests/test_agent_coordination.py ______________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_agent_coordination.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_agent_coordination.py:2: in <module>
+    from core.agent_coordination import AgentCoordinator
+E   ModuleNotFoundError: No module named 'core'
+_____________ ERROR collecting tests/test_analysis_strategies.py ______________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_analysis_strategies.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_analysis_strategies.py:14: in <module>
+    from ..core.analysis_strategies import (
+E   ImportError: attempted relative import with no known parent package
+__________________ ERROR collecting tests/test_analyzers.py ___________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_analyzers.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_analyzers.py:2: in <module>
+    from core.analysis.blackbox_analyzer import BlackboxAnalyzer
+E   ModuleNotFoundError: No module named 'core'
+________________ ERROR collecting tests/test_cache_manager.py _________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_cache_manager.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_cache_manager.py:8: in <module>
+    from ..core.cache_manager import (
+E   ImportError: attempted relative import with no known parent package
+______________ ERROR collecting tests/test_cache_persistence.py _______________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_cache_persistence.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_cache_persistence.py:12: in <module>
+    from ..core.cache_persistence import (
+E   ImportError: attempted relative import with no known parent package
+_______________ ERROR collecting tests/test_cache_preloader.py ________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_cache_preloader.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_cache_preloader.py:9: in <module>
+    from ..core.cache_preloader import (
+E   ImportError: attempted relative import with no known parent package
+____________ ERROR collecting tests/test_collaborative_learning.py ____________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_collaborative_learning.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_collaborative_learning.py:11: in <module>
+    from ..learning.collaborative_learning import (
+E   ImportError: attempted relative import with no known parent package
+_________________ ERROR collecting tests/test_coordination.py _________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_coordination.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_coordination.py:12: in <module>
+    from ..core.coordinator import Coordinator
+E   ImportError: attempted relative import with no known parent package
+______________ ERROR collecting tests/test_distributed_cache.py _______________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_distributed_cache.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_distributed_cache.py:8: in <module>
+    import aioredis
+E   ModuleNotFoundError: No module named 'aioredis'
+_________________ ERROR collecting tests/test_integration.py __________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_integration.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_integration.py:12: in <module>
+    from ..core.integration import AgentIntegration, IntegrationConfig
+E   ImportError: attempted relative import with no known parent package
+___________________ ERROR collecting tests/test_learning.py ___________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_learning.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_learning.py:3: in <module>
+    from ..agents.learner_agent import LearnerAgent, AgentCapability
+E   ImportError: attempted relative import with no known parent package
+______________ ERROR collecting tests/test_learning_advanced.py _______________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_learning_advanced.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_learning_advanced.py:12: in <module>
+    from ..agents.neural_symbolic_agent import NeuralSymbolicAgent
+E   ImportError: attempted relative import with no known parent package
+________________ ERROR collecting tests/test_memory_manager.py ________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_memory_manager.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_memory_manager.py:14: in <module>
+    from ..core.memory_manager import MemoryManager, MemoryConfig, CacheItem
+E   ImportError: attempted relative import with no known parent package
+________________ ERROR collecting tests/test_meta_reasoner.py _________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_meta_reasoner.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_meta_reasoner.py:12: in <module>
+    from ..agents.meta_reasoner import MetaReasoner, ReasoningPattern
+E   ImportError: attempted relative import with no known parent package
+_______________ ERROR collecting tests/test_neural_symbolic.py ________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_neural_symbolic.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_neural_symbolic.py:5: in <module>
+    from ..agents.neural_symbolic_agent import (
+E   ImportError: attempted relative import with no known parent package
+___________ ERROR collecting tests/test_neural_symbolic_advanced.py ___________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_neural_symbolic_advanced.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_neural_symbolic_advanced.py:7: in <module>
+    from hypothesis import given, strategies as st
+E   ModuleNotFoundError: No module named 'hypothesis'
+_________________ ERROR collecting tests/test_optimization.py _________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_optimization.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_optimization.py:14: in <module>
+    from ..core.framework import Framework
+E   ImportError: attempted relative import with no known parent package
+_________________ ERROR collecting tests/test_performance.py __________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_performance.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_performance.py:14: in <module>
+    from ..core.framework import Framework
+E   ImportError: attempted relative import with no known parent package
+______________ ERROR collecting tests/test_performance_tuner.py _______________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_performance_tuner.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_performance_tuner.py:8: in <module>
+    from ..core.performance_tuner import (
+E   ImportError: attempted relative import with no known parent package
+______________ ERROR collecting tests/test_pointcut_dashboard.py ______________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_pointcut_dashboard.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_pointcut_dashboard.py:9: in <module>
+    from ..visualization.pointcut_dashboard import (
+E   ImportError: attempted relative import with no known parent package
+_______________ ERROR collecting tests/test_pointcut_manager.py _______________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_pointcut_manager.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_pointcut_manager.py:4: in <module>
+    from multi_agent_framework.core.pointcuts.manager import PointcutManager, PointcutType, Pointcut
+E   ModuleNotFoundError: No module named 'multi_agent_framework'
+________________ ERROR collecting tests/test_pointcut_repl.py _________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_pointcut_repl.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_pointcut_repl.py:7: in <module>
+    from ..repl.pointcut_repl import PointcutREPL
+E   ImportError: attempted relative import with no known parent package
+_______________ ERROR collecting tests/test_pointcut_routes.py ________________
+tests\test_pointcut_routes.py:4: in <module>
+    from fastapi.testclient import TestClient
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\__init__.py:7: in <module>
+    from .applications import FastAPI as FastAPI
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\applications.py:3: in <module>
+    from fastapi import routing
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\routing.py:22: in <module>
+    from fastapi.dependencies.models import Dependant
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\dependencies\models.py:3: in <module>
+    from fastapi.security.base import SecurityBase
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\security\__init__.py:1: in <module>
+    from .api_key import APIKeyCookie as APIKeyCookie
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\security\api_key.py:3: in <module>
+    from fastapi.openapi.models import APIKey, APIKeyIn
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\fastapi\openapi\models.py:103: in <module>
+    class Schema(BaseModel):
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\pydantic\main.py:369: in __new__
+    cls.__signature__ = ClassAttribute('__signature__', generate_model_signature(cls.__init__, fields, config))
+..\AppData\Local\Programs\Python\Python311\Lib\site-packages\pydantic\utils.py:231: in generate_model_signature
+    merged_params[param_name] = Parameter(
+..\AppData\Local\Programs\Python\Python311\Lib\inspect.py:2708: in __init__
+    raise ValueError('{!r} is not a valid parameter name'.format(name))
+E   ValueError: 'not' is not a valid parameter name
+_______________ ERROR collecting tests/test_prolog_reasoner.py ________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_prolog_reasoner.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_prolog_reasoner.py:10: in <module>
+    from ..agents.prolog_reasoner import PrologReasoner, RuleStats
+E   ImportError: attempted relative import with no known parent package
+_____________________ ERROR collecting tests/test_repl.py _____________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_repl.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_repl.py:11: in <module>
+    from ..repl.interactive_shell import AgentREPL
+E   ImportError: attempted relative import with no known parent package
+_______________ ERROR collecting tests/test_resource_manager.py _______________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_resource_manager.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_resource_manager.py:10: in <module>
+    from ..core.resource_manager import (
+E   ImportError: attempted relative import with no known parent package
+___________________ ERROR collecting tests/test_sandbox.py ____________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_sandbox.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_sandbox.py:6: in <module>
+    from ..repl.code_sandbox import CodeSandbox, SandboxConfig
+E   ImportError: attempted relative import with no known parent package
+________________ ERROR collecting tests/test_self_prompting.py ________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_self_prompting.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_self_prompting.py:9: in <module>
+    from ..core.self_prompting import (
+E   ImportError: attempted relative import with no known parent package
+_______________ ERROR collecting tests/test_service_manager.py ________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_service_manager.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_service_manager.py:5: in <module>
+    from ..core.service_manager import (
+E   ImportError: attempted relative import with no known parent package
+_______________ ERROR collecting tests/test_task_allocation.py ________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_task_allocation.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_task_allocation.py:11: in <module>
+    from ..core.task_allocation import (
+E   ImportError: attempted relative import with no known parent package
+__________________ ERROR collecting tests/test_telemetry.py ___________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_telemetry.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_telemetry.py:10: in <module>
+    from opentelemetry.exporter.jaeger import JaegerExporter
+E   ModuleNotFoundError: No module named 'opentelemetry.exporter.jaeger'
+_______________ ERROR collecting tests/test_tool_management.py ________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_tool_management.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_tool_management.py:10: in <module>
+    from ..core.tool_management import (
+E   ImportError: attempted relative import with no known parent package
+_______________ ERROR collecting tests/test_transformations.py ________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_transformations.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_transformations.py:11: in <module>
+    from ..core.transformations import StateTransformer, TransformationRule, TransformationError, TransformationMetrics
+E   ImportError: attempted relative import with no known parent package
+________________ ERROR collecting tests/test_unified_cache.py _________________
+ImportError while importing test module 'C:\Users\posso\crypto_app\tests\test_unified_cache.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\AppData\Local\Programs\Python\Python311\Lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\test_unified_cache.py:8: in <module>
+    import aioredis
+E   ModuleNotFoundError: No module named 'aioredis'
+=========================== short test summary info ===========================
+ERROR tests/test_agent_coordination.py
+ERROR tests/test_analysis_strategies.py
+ERROR tests/test_analyzers.py
+ERROR tests/test_cache_manager.py
+ERROR tests/test_cache_persistence.py
+ERROR tests/test_cache_preloader.py
+ERROR tests/test_collaborative_learning.py
+ERROR tests/test_coordination.py
+ERROR tests/test_distributed_cache.py
+ERROR tests/test_integration.py
+ERROR tests/test_learning.py
+ERROR tests/test_learning_advanced.py
+ERROR tests/test_memory_manager.py
+ERROR tests/test_meta_reasoner.py
+ERROR tests/test_neural_symbolic.py
+ERROR tests/test_neural_symbolic_advanced.py
+ERROR tests/test_optimization.py
+ERROR tests/test_performance.py
+ERROR tests/test_performance_tuner.py
+ERROR tests/test_pointcut_dashboard.py
+ERROR tests/test_pointcut_manager.py
+ERROR tests/test_pointcut_repl.py
+ERROR tests/test_pointcut_routes.py - ValueError: 'not' is not a valid parame...
+ERROR tests/test_prolog_reasoner.py
+ERROR tests/test_repl.py
+ERROR tests/test_resource_manager.py
+ERROR tests/test_sandbox.py
+ERROR tests/test_self_prompting.py
+ERROR tests/test_service_manager.py
+ERROR tests/test_task_allocation.py
+ERROR tests/test_telemetry.py
+ERROR tests/test_tool_management.py
+ERROR tests/test_transformations.py
+ERROR tests/test_unified_cache.py
+!!!!!!!!!!!!!!!!!! Interrupted: 34 errors during collection !!!!!!!!!!!!!!!!!!!
+============================= 34 errors in 7.46s ==============================
