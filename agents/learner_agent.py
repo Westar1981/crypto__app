@@ -1,14 +1,25 @@
-from typing import Dict, Any, List, Optional, Set
-from .base_agent import BaseAgent, AgentCapability, Message
-from loguru import logger
+from typing import Dict, Any, List, Optional, Tuple, Callable
 import numpy as np
-from dataclasses import dataclass
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from collections import deque
+from dataclasses import dataclass, field
+import torch.multiprocessing as mp
+from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor
+from ..core.memory_handler import MemoryHandler, MemoryConfig
+from ..core.metrics_tracker import MetricsTracker, MetricsConfig
+from torch.optim.lr_scheduler import ReduceLROnPlateau
 import random
-import asyncio
+from functools import lru_cache
+import timefrom concurrent.futures import ThreadPoolExecutor
+from ..core.memory_handler import MemoryHandler, MemoryConfig
+from ..core.metrics_tracker import MetricsTracker, MetricsConfig
+from torch.optim.lr_scheduler import ReduceLROnPlateau
+import torch.distributed as dist
+import os
+from ..core.self_monitor import SelfMonitor, MonitorConfig
 
 @dataclass
 class Experience:
@@ -19,10 +30,206 @@ class Experience:
     next_state: Dict[str, Any]
     done: bool
 
+@dataclass 
+class LearnerConfig:
+    """Configuration for meta learner"""
+    buffer_size: int = 10000
+    batch_size: int = 64
+    gamma: float = 0.99
+    learning_rate: float = 1e-4
+    target_update: int = 10
+    min_experiences: int = 100
+    batch_queue_size: int = 32
+    min_delta: float = 0.001
+    patience: int = 5
+    max_workers: int = 4
+    cache_size: int = 1000
+    gradient_accumulation_steps: int = 4
+    min_lr: float = 1e-6
+    lr_patience: int = 3
+    checkpoint_dir: str = "checkpoints"
+    max_grad_norm: float = 1.0
+    dynamic_batching: bool = True
+
+@dataclass
+class MetaLearner:
+    """Neural network based meta-learning agent"""
+    state_size: int
+    action_size: int
+    config: LearnerConfig = field(default_factory=LearnerConfig)
+    
+    def __post_init__(self):
+        self.memory = deque(maxlen=self.config.buffer_size)
+        self.batch_queue = deque(maxlen=self.config.batch_queue_size)
+        
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.main_net = self._build_network().to(self.device)
+        self.target_net = self._build_network().to(self.device)
+        self.target_net.load_state_dict(self.main_net.state_dict())
+        
+        self.optimizer = torch.optim.Adam(
+            self.main_net.parameters(), 
+            lr=self.config.learning_rate
+        )
+        self.scheduler = ReduceLROnPlateau(
+            self.optimizer,
+            mode='min',
+            factor=0.5,
+            patience=self.config.lr_patience,
+            min_lr=self.config.min_lr
+        )
+        
+        self.memory_handler = MemoryHandler(MemoryConfig())
+        self.metrics = MetricsTracker(MetricsConfig())
+        self.monitor = SelfMonitor(MonitorConfig())
+        
+        self.executor = ThreadPoolExecutor(max_workers=self.config.max_workers)
+        self.steps = 0
+
+    def _build_network(self) -> nn.Module:
+        return CapabilityNetwork(self.state_size, self.action_size)
+
+    @lru_cache(maxsize=1000)
+    def _process_state(self, state: Dict[str, Any]) -> torch.Tensor:
+        # Convert state dict to tensor
+        state_tensor = torch.tensor(
+            [list(state.values())], 
+            dtype=torch.float32,
+            device=self.device
+        )
+        return state_tensor
+
+    async def batch_process_states(self, states: List[Dict[str, Any]]) -> List[torch.Tensor]:
+        processed = []
+        for state_batch in self._chunk_states(states, self.config.batch_size):
+            futures = [
+                self.executor.submit(self._process_state, state)
+                for state in state_batch
+            ]
+            batch_tensors = [f.result() for f in futures]
+            processed.extend(batch_tensors)
+        return processed
+
+    async def optimize_model(self) -> float:
+        if len(self.memory) < self.config.min_experiences:
+            return 0.0
+            
+        batch_size = self._get_optimal_batch_size()
+        experiences = random.sample(self.memory, batch_size)
+        
+        states = torch.cat([self._process_state(e.state) for e in experiences])
+        actions = torch.tensor([e.action for e in experiences], device=self.device)
+        rewards = torch.tensor([e.reward for e in experiences], device=self.device)
+        next_states = torch.cat([self._process_state(e.next_state) for e in experiences])
+        dones = torch.tensor([e.done for e in experiences], device=self.device)
+
+        current_q_values = self.main_net(states).gather(1, actions.unsqueeze(1))
+        next_q_values = self.target_net(next_states).max(1)[0].detach()
+        target_q_values = rewards + (1 - dones) * self.config.gamma * next_q_values
+        
+        loss = F.smooth_l1_loss(current_q_values, target_q_values.unsqueeze(1))
+        loss.backward()
+
+        if self.steps % self.config.gradient_accumulation_steps == 0:
+            torch.nn.utils.clip_grad_norm_(self.main_net.parameters(), self.config.max_grad_norm)
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+            
+        self.steps += 1
+        if self.steps % self.config.target_update == 0:
+            self.target_net.load_state_dict(self.main_net.state_dict())
+            
+        return loss.item()
+
+    def _get_optimal_batch_size(self) -> int:
+        """Dynamically determine optimal batch size"""
+        try:
+            # Start with small batch
+            batch_size = 4
+            max_memory = 0.8 * torch.cuda.get_device_properties(0).total_memory
+            
+            while batch_size <= self.config.batch_size * 2:
+                # Test batch size
+                sample = random.sample(self.replay_buffer, batch_size)
+                batch = Experience(*zip(*sample))
+                
+                states = torch.stack([self.encode_state(str(s)) for s in batch.state])
+                torch.cuda.empty_cache()
+                
+                if states.element_size() * states.nelement() * 4 > max_memory:
+                    return batch_size // 2
+                    
+                batch_size *= 2
+            
+            return batch_size // 2
+            
+        except Exception:
+            return self.config.batch_size
+
+    async def _save_checkpoint(self, loss: float):
+        """Save model checkpoint"""
+        checkpoint = {
+            'model_state': self.policy_net.state_dict(),
+            'optimizer_state': self.optimizer.state_dict(),
+            'scheduler_state': self.scheduler.state_dict(),
+            'grad_step': self.grad_step,
+            'loss': loss,
+            'config': self.config
+        }
+        path = os.path.join(
+            self.config.checkpoint_dir,
+            f'checkpoint_{self.grad_step}.pt'
+        )
+        torch.save(checkpoint, path)
+
+    async def load_checkpoint(self, path: str):
+        self.grad_step = checkpoint['grad_step']
+
+    async def get_action(self, state: torch.Tensor) -> torch.Tensor:
+        """Get action from state"""
+        with torch.no_grad():
+            return self.policy_net(state)
+
+    def _handle_adaptation(self, action: str):
+        """Handle adaptation requests"""
+        adaptations = {
+            'reduce_cpu_load': self._reduce_batch_size,
+            'reduce_memory': self._cleanup_memory,
+            'optimize_latency': self._optimize_processing,
+            'improve_throughput': self._improve_throughput
+        }
+        
+        if action in adaptations:
+            adaptations[action]()
+            
+    def _reduce_batch_size(self):
+        """Reduce batch size for processing"""
+        self.config.batch_size = max(self.config.batch_size // 2, 1)
+        
+    def _cleanup_memory(self):
+        """Free up memory"""
+        torch.cuda.empty_cache()
+        self.state_cache.clear()
+        
+    def _optimize_processing(self):
+        """Optimize for latency"""
+        self.config.gradient_accumulation_steps = max(
+            self.config.gradient_accumulation_steps // 2,
+            1
+        )
+        
+    def _improve_throughput(self):
+        """Improve processing throughput"""
+        self.config.batch_size = min(
+            self.config.batch_size * 2,
+            8192
+        )
+
 class CapabilityNetwork(nn.Module):
     """Neural network for capability learning."""
     
     def __init__(self, state_size: int, action_size: int):
+        
         super().__init__()
         self.fc1 = nn.Linear(state_size, 128)
         self.fc2 = nn.Linear(128, 64)
@@ -32,85 +239,6 @@ class CapabilityNetwork(nn.Module):
         x = F.relu(self.fc1(x))
         x = F.relu(self.fc2(x))
         return self.fc3(x)
-
-class MetaLearner:
-    """Handles meta-learning for capability enhancement."""
-    
-    def __init__(self, state_size: int, action_size: int):
-        self.state_size = state_size
-        self.action_size = action_size
-        self.memory = deque(maxlen=10000)
-        self.gamma = 0.95  # discount rate
-        self.epsilon = 1.0  # exploration rate
-        self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
-        self.learning_rate = 0.001
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        
-        self.model = CapabilityNetwork(state_size, action_size).to(self.device)
-        self.target_model = CapabilityNetwork(state_size, action_size).to(self.device)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=self.learning_rate)
-        
-    def remember(self, experience: Experience):
-        """Store experience in memory."""
-        self.memory.append(experience)
-        
-    def act(self, state: Dict[str, Any]) -> str:
-        """Choose an action based on state."""
-        if random.random() <= self.epsilon:
-            return random.randint(0, self.action_size - 1)
-            
-        state_tensor = torch.FloatTensor(self._encode_state(state)).to(self.device)
-        with torch.no_grad():
-            action_values = self.model(state_tensor)
-        return torch.argmax(action_values).item()
-        
-    def replay(self, batch_size: int):
-        """Train on past experiences."""
-        if len(self.memory) < batch_size:
-            return
-            
-        minibatch = random.sample(self.memory, batch_size)
-        states = torch.FloatTensor([self._encode_state(e.state) for e in minibatch]).to(self.device)
-        actions = torch.LongTensor([e.action for e in minibatch]).to(self.device)
-        rewards = torch.FloatTensor([e.reward for e in minibatch]).to(self.device)
-        next_states = torch.FloatTensor([self._encode_state(e.next_state) for e in minibatch]).to(self.device)
-        dones = torch.FloatTensor([e.done for e in minibatch]).to(self.device)
-        
-        # Get Q values for current states
-        current_q_values = self.model(states).gather(1, actions.unsqueeze(1))
-        
-        # Get Q values for next states
-        with torch.no_grad():
-            next_q_values = self.target_model(next_states).max(1)[0]
-        target_q_values = rewards + (self.gamma * next_q_values * (1 - dones))
-        
-        # Compute loss and update
-        loss = F.mse_loss(current_q_values.squeeze(), target_q_values)
-        self.optimizer.zero_grad()
-        loss.backward()
-        self.optimizer.step()
-        
-        # Update exploration rate
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
-            
-    def update_target_model(self):
-        """Update target network."""
-        self.target_model.load_state_dict(self.model.state_dict())
-        
-    def _encode_state(self, state: Dict[str, Any]) -> List[float]:
-        """Encode state dictionary into vector."""
-        encoded = []
-        for key, value in sorted(state.items()):
-            if isinstance(value, (int, float)):
-                encoded.append(float(value))
-            elif isinstance(value, bool):
-                encoded.append(1.0 if value else 0.0)
-            elif isinstance(value, str):
-                # Simple hash-based encoding
-                encoded.append(float(hash(value)) % 100)
-        return encoded
 
 class CapabilityEvolution:
     """Handles capability evolution through genetic algorithms."""
@@ -125,167 +253,86 @@ class CapabilityEvolution:
         self.population = [self._mutate_capability(template) for _ in range(self.population_size)]
         
     def evolve(self, generations: int = 10):
-        """Evolve capabilities over generations."""
-        for _ in range(generations):
-            # Select parents based on fitness
-            parents = self._select_parents()
-            
-            # Create new population through crossover and mutation
-            new_population = []
-            while len(new_population) < self.population_size:
-                parent1, parent2 = random.sample(parents, 2)
-                child = self._crossover(parent1, parent2)
-                child = self._mutate_capability(child)
-                new_population.append(child)
+        """Parallel evolution"""
+        with mp.Pool(processes=mp.cpu_count()) as pool:
+            for _ in range(generations):
+                # Evaluate fitness in parallel
+                self.fitness_scores = pool.map(self._evaluate_fitness, self.population)
                 
-            self.population = new_population
-            
+                # Select and create new population
+                parents = self._select_parents()
+                new_population = []
+                
+                # Parallel crossover and mutation
+                crossover_args = [(p1, p2) for p1, p2 in zip(parents[::2], parents[1::2])]
+                children = pool.starmap(self._parallel_breed, crossover_args)
+                new_population.extend([c for pair in children for c in pair])
+                
+                self.population = new_population
+                
+    def _parallel_breed(self, parent1: AgentCapability, parent2: AgentCapability) -> Tuple[AgentCapability, AgentCapability]:
+        """Parallel breeding operation"""
+        child1 = self._crossover(parent1, parent2)
+        child2 = self._crossover(parent2, parent1)
+        return self._mutate_capability(child1), self._mutate_capability(child2)            def _mutate_capability(self, capability: AgentCapability) -> AgentCapability:        """Mutate a capability with random variations."""        mutated = AgentCapability(            name=capability.name,            parameters=capability.parameters.copy(),
+            confidence=capability.confidence
+        )
+        # Apply random mutations
+        for param in mutated.parameters:
+            if random.random() < 0.2:  # 20% mutation chance
+                mutated.parameters[param] *= random.uniform(0.8, 1.2)
+        return mutated
+        
     def _select_parents(self) -> List[AgentCapability]:
         """Select parents using tournament selection."""
-        tournament_size = 3
+        tournament_size = 5
         parents = []
-        for _ in range(self.population_size // 2):
-            tournament = random.sample(list(enumerate(self.population)), tournament_size)
-            winner = max(tournament, key=lambda x: self.fitness_scores[x[0]])
-            parents.append(winner[1])
+        for _ in range(2):
+            tournament = random.sample(list(zip(self.population, self.fitness_scores)), tournament_size)
+            winner = max(tournament, key=lambda x: x[1])[0]
+            parents.append(winner)
         return parents
         
     def _crossover(self, parent1: AgentCapability, parent2: AgentCapability) -> AgentCapability:
-        """Create new capability by combining parents."""
-        return AgentCapability(
+        """Perform crossover between two parents."""
+        child = AgentCapability(
             name=f"{parent1.name}_{parent2.name}",
-            description=f"Hybrid of {parent1.name} and {parent2.name}",
-            input_types=parent1.input_types.union(parent2.input_types),
-            output_types=parent1.output_types.union(parent2.output_types),
-            performance_metrics={}
+            parameters={},
+            confidence=(parent1.confidence + parent2.confidence) / 2
         )
+        for param in parent1.parameters:
+            if random.random() < 0.5:
+                child.parameters[param] = parent1.parameters[param]
+            else:
+                child.parameters[param] = parent2.parameters[param]
+        return child
         
-    def _mutate_capability(self, capability: AgentCapability) -> AgentCapability:
-        """Randomly modify capability attributes."""
-        return AgentCapability(
-            name=capability.name + "_mutated",
-            description=capability.description,
-            input_types=set(list(capability.input_types)[:random.randint(1, len(capability.input_types))]),
-            output_types=set(list(capability.output_types)[:random.randint(1, len(capability.output_types))]),
-            performance_metrics={}
-        )
+    def action_to_changes(self, action: torch.Tensor) -> List[FileChange]:
+        """Convert action tensor to concrete file changes"""
+        # Implementation depends on action space design
+        # Placeholder that should be properly implemented
+        return []
 
-class LearnerAgent(BaseAgent):
-    """Agent specialized in learning and evolving capabilities."""
-    
-    def __init__(self, agent_id: Optional[str] = None):
-        super().__init__(agent_id=agent_id, name="LearnerAgent")
-        self.meta_learner = MetaLearner(state_size=10, action_size=5)
-        self.capability_evolution = CapabilityEvolution()
-        self.learning_tasks: asyncio.Queue = asyncio.Queue()
-        self.evolution_tasks: asyncio.Queue = asyncio.Queue()
-        
-    async def process_message(self, message: Message):
-        """Process incoming messages."""
-        if message.message_type == "learn_capability":
-            await self.learn_capability(message.content, message.sender)
-        elif message.message_type == "evolve_capabilities":
-            await self.evolve_capabilities(message.content, message.sender)
-        else:
-            logger.warning(f"Unknown message type received: {message.message_type}")
-            
-    async def handle_task(self, task: Dict[str, Any]):
-        """Handle specific learning tasks."""
-        task_type = task.get("type")
-        if task_type == "learn":
-            await self.learning_tasks.put(task)
-        elif task_type == "evolve":
-            await self.evolution_tasks.put(task)
-            
-    async def learn_capability(self, content: Dict[str, Any], requester: str):
-        """Learn a new capability or improve existing one."""
-        try:
-            state = content.get("state", {})
-            action = content.get("action", "")
-            reward = content.get("reward", 0.0)
-            next_state = content.get("next_state", {})
-            done = content.get("done", False)
-            
-            # Store experience
-            experience = Experience(state, action, reward, next_state, done)
-            self.meta_learner.remember(experience)
-            
-            # Train on batch
-            self.meta_learner.replay(32)
-            
-            if done:
-                self.meta_learner.update_target_model()
-                
-            await self.send_message(
-                receiver=requester,
-                content={"status": "Learning completed"},
-                message_type="learning_complete"
-            )
-            
-        except Exception as e:
-            logger.error(f"Error learning capability: {str(e)}")
-            await self.send_message(
-                receiver=requester,
-                content={"error": str(e)},
-                message_type="learning_error"
-            )
-            
-    async def evolve_capabilities(self, content: Dict[str, Any], requester: str):
-        """Evolve capabilities through genetic algorithm."""
-        try:
-            template = content.get("template")
-            if not template:
-                raise ValueError("Template capability required for evolution")
-                
-            # Initialize population
-            self.capability_evolution.initialize_population(template)
-            
-            # Set fitness scores based on performance
-            self.capability_evolution.fitness_scores = [
-                cap.performance_metrics.get("success_rate", 0.0)
-                for cap in self.capability_evolution.population
-            ]
-            
-            # Evolve capabilities
-            self.capability_evolution.evolve()
-            
-            # Return best capability
-            best_idx = max(range(len(self.capability_evolution.population)),
-                          key=lambda i: self.capability_evolution.fitness_scores[i])
-            best_capability = self.capability_evolution.population[best_idx]
-            
-            await self.send_message(
-                receiver=requester,
-                content={"evolved_capability": vars(best_capability)},
-                message_type="evolution_complete"
-            )
-            
-        except Exception as e:
-            logger.error(f"Error evolving capabilities: {str(e)}")
-            await self.send_message(
-                receiver=requester,
-                content={"error": str(e)},
-                message_type="evolution_error"
-            )
-            
-    async def _process_learning_queue(self):
-        """Process queued learning tasks."""
-        while True:
-            try:
-                task = await self.learning_tasks.get()
-                await self.learn_capability(task, task.get("requester"))
-                self.learning_tasks.task_done()
-            except Exception as e:
-                logger.error(f"Error processing learning task: {str(e)}")
-            await asyncio.sleep(0.1)
-            
-    async def _process_evolution_queue(self):
-        """Process queued evolution tasks."""
-        while True:
-            try:
-                task = await self.evolution_tasks.get()
-                await self.evolve_capabilities(task, task.get("requester"))
-                self.evolution_tasks.task_done()
-            except Exception as e:
-                logger.error(f"Error processing evolution task: {str(e)}")
-            await asyncio.sleep(0.1) 
+    def action_to_changes(self, action: torch.Tensor) -> List[FileChange]:
+        """Convert action tensor to concrete file changes"""
+        # Implementation depends on action space design
+        # Placeholder that should be properly implemented
+        return []
+
+{
+  "configurations": [
+    {
+      "type": "debugpy",
+      "request": "launch",
+      "name": "Launch Program",
+      "program": "${workspaceFolder}/${input:programPath}"
+    }
+  ],
+  "inputs": [
+    {
+      "type": "promptString",
+      "id": "programPath",
+      "description": "Path to the Python file you want to debug"
+    }
+  ]
+}
